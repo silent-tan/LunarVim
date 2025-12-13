@@ -3,7 +3,7 @@ local M = {}
 local Log = require "lvim.core.log"
 local fmt = string.format
 local lvim_lsp_utils = require "lvim.lsp.utils"
-local is_windows = vim.loop.os_uname().version:match "Windows"
+local is_windows = vim.uv.os_uname().version:match "Windows"
 
 --- Get the lspconfig to mason package name mapping
 ---@return table<string, string>
@@ -69,41 +69,59 @@ local function resolve_config(server_name, ...)
   return defaults
 end
 
--- manually start the server and don't wait for the usual filetype trigger from lspconfig
-local function buf_try_add(server_name, bufnr)
-  bufnr = bufnr or vim.api.nvim_get_current_buf()
-  require("lspconfig")[server_name].manager:try_add_wrapper(bufnr)
+-- Check if the server is already configured via vim.lsp.config
+local function server_is_configured(server_name)
+  return vim.lsp.config[server_name] ~= nil
 end
 
--- check if the manager autocomd has already been configured since some servers can take a while to initialize
--- this helps guarding against a data-race condition where a server can get configured twice
--- which seems to occur only when attaching to single-files
-local function client_is_configured(server_name, ft)
-  ft = ft or vim.bo.filetype
-  local active_autocmds = vim.api.nvim_get_autocmds { event = "FileType", pattern = ft }
-  for _, result in ipairs(active_autocmds) do
-    if result.desc ~= nil and result.desc:match("server " .. server_name .. " ") then
-      Log:debug(string.format("[%q] is already configured", server_name))
-      return true
-    end
+-- Check if server is already enabled
+local function server_is_enabled(server_name)
+  return vim.lsp.is_enabled(server_name)
+end
+
+-- Manually attach the LSP client to the current buffer
+local function buf_try_attach(server_name, bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  -- Use vim.lsp.start to attach the client to the buffer
+  local config = vim.lsp.config[server_name]
+  if config then
+    vim.lsp.start(config, { bufnr = bufnr })
   end
-  return false
+end
+
+--- Get default server configuration from lspconfig
+---@param server_name string
+---@return table
+local function get_server_default_config(server_name)
+  -- Try to get default config from lspconfig.configs.<server_name>
+  local ok, server_config = pcall(require, "lspconfig.configs." .. server_name)
+  if ok and server_config and server_config.default_config then
+    return {
+      cmd = server_config.default_config.cmd,
+      filetypes = server_config.default_config.filetypes,
+      root_markers = server_config.default_config.root_dir and {} or nil,
+    }
+  end
+  return {}
 end
 
 local function launch_server(server_name, config)
   pcall(function()
-    local command = config.cmd
-      or (function()
-        local default_config = require("lspconfig.server_configurations." .. server_name).default_config
-        return default_config.cmd
-      end)()
-    -- some servers have dynamic commands defined with on_new_config
-    if type(command) == "table" and type(command[1]) == "string" and vim.fn.executable(command[1]) ~= 1 then
+    -- Merge with default config from lspconfig to get cmd and filetypes
+    local default_config = get_server_default_config(server_name)
+    local merged_config = vim.tbl_deep_extend("force", default_config, config)
+
+    local command = merged_config.cmd
+    -- Check if cmd is executable
+    if command and type(command) == "table" and type(command[1]) == "string" and vim.fn.executable(command[1]) ~= 1 then
       Log:debug(string.format("[%q] is either not installed, missing from PATH, or not executable.", server_name))
       return
     end
-    require("lspconfig")[server_name].setup(config)
-    buf_try_add(server_name)
+
+    -- Use vim.lsp.config API (Neovim 0.11+)
+    vim.lsp.config(server_name, merged_config)
+    vim.lsp.enable(server_name)
+    buf_try_attach(server_name)
   end)
 end
 
@@ -114,7 +132,7 @@ function M.setup(server_name, user_config)
   vim.validate { name = { server_name, "string" } }
   user_config = user_config or {}
 
-  if lvim_lsp_utils.is_client_active(server_name) or client_is_configured(server_name) then
+  if lvim_lsp_utils.is_client_active(server_name) or server_is_enabled(server_name) then
     return
   end
 

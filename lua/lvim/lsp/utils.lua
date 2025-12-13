@@ -40,15 +40,20 @@ function M.get_client_capabilities(client_id)
 end
 
 ---Get supported filetypes per server
----@param server_name string can be any server supported by nvim-lsp-installer
----@return string[] supported filestypes as a list of strings
+---@param server_name string can be any server supported by mason-lspconfig
+---@return string[] supported filetypes as a list of strings
 function M.get_supported_filetypes(server_name)
-  local status_ok, config = pcall(require, ("lspconfig.server_configurations.%s"):format(server_name))
-  if not status_ok then
-    return {}
+  -- Try vim.lsp.config first (Neovim 0.11+)
+  local lsp_config = vim.lsp.config[server_name]
+  if lsp_config and lsp_config.filetypes then
+    return lsp_config.filetypes
   end
-
-  return config.default_config.filetypes or {}
+  -- Fallback to lspconfig.configs.<server_name> for unconfigured servers
+  local ok, server_config = pcall(require, "lspconfig.configs." .. server_name)
+  if ok and server_config and server_config.default_config and server_config.default_config.filetypes then
+    return server_config.default_config.filetypes
+  end
+  return {}
 end
 
 ---Get supported servers per filetype
@@ -81,15 +86,12 @@ function M.get_all_supported_filetypes()
     return vim.tbl_keys(filetype_server_map or {})
   end
 
-  -- Final fallback: get filetypes from lspconfig directly
+  -- Final fallback: get filetypes from vim.lsp.config
   local filetypes = {}
-  local lspconfig_ok, lspconfig_configs = pcall(require, "lspconfig.configs")
-  if lspconfig_ok then
-    for _, config in pairs(lspconfig_configs) do
-      if config.default_config and config.default_config.filetypes then
-        for _, ft in ipairs(config.default_config.filetypes) do
-          filetypes[ft] = true
-        end
+  for name, config in pairs(vim.lsp.config) do
+    if type(config) == "table" and config.filetypes then
+      for _, ft in ipairs(config.filetypes) do
+        filetypes[ft] = true
       end
     end
   end
@@ -135,20 +137,23 @@ end
 
 function M.setup_document_symbols(client, bufnr)
   vim.g.navic_silence = false -- can be set to true to suppress error
-  local symbols_supported = client.supports_method "textDocument/documentSymbol"
+  local symbols_supported = client:supports_method "textDocument/documentSymbol"
   if not symbols_supported then
     Log:debug("skipping setup for document_symbols, method not supported by " .. client.name)
     return
   end
   local status_ok, navic = pcall(require, "nvim-navic")
   if status_ok then
-    navic.attach(client, bufnr)
+    -- Check if navic is already attached to this buffer
+    if not navic.is_available(bufnr) then
+      navic.attach(client, bufnr)
+    end
   end
 end
 
 function M.setup_codelens_refresh(client, bufnr)
   local status_ok, codelens_supported = pcall(function()
-    return client.supports_method "textDocument/codeLens"
+    return client:supports_method "textDocument/codeLens"
   end)
   if not status_ok or not codelens_supported then
     return
