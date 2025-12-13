@@ -65,14 +65,35 @@ function M.get_supported_servers(filter)
   return supported_servers or {}
 end
 
----Get all supported filetypes by nvim-lsp-installer
----@return string[] supported filestypes as a list of strings
+---Get all supported filetypes by mason-lspconfig
+---@return string[] supported filetypes as a list of strings
 function M.get_all_supported_filetypes()
-  local status_ok, filetype_server_map = pcall(require, "mason-lspconfig.mappings.filetype")
-  if not status_ok then
-    return {}
+  -- Try mason-lspconfig v2+ API first (get_filetype_map via mappings module)
+  local ok, mappings = pcall(require, "mason-lspconfig.mappings")
+  if ok and mappings.get_filetype_map then
+    local filetype_map = mappings.get_filetype_map()
+    return vim.tbl_keys(filetype_map or {})
   end
-  return vim.tbl_keys(filetype_server_map or {})
+
+  -- Fallback to direct module require (works for v1.x and some v2.x versions)
+  local status_ok, filetype_server_map = pcall(require, "mason-lspconfig.mappings.filetype")
+  if status_ok then
+    return vim.tbl_keys(filetype_server_map or {})
+  end
+
+  -- Final fallback: get filetypes from lspconfig directly
+  local filetypes = {}
+  local lspconfig_ok, lspconfig_configs = pcall(require, "lspconfig.configs")
+  if lspconfig_ok then
+    for _, config in pairs(lspconfig_configs) do
+      if config.default_config and config.default_config.filetypes then
+        for _, ft in ipairs(config.default_config.filetypes) do
+          filetypes[ft] = true
+        end
+      end
+    end
+  end
+  return vim.tbl_keys(filetypes)
 end
 
 function M.setup_document_highlight(client, bufnr)

@@ -7,14 +7,16 @@ local core_plugins = {
     dependencies = { "mason-lspconfig.nvim", "nlsp-settings.nvim" },
   },
   {
-    "williamboman/mason-lspconfig.nvim",
+    "mason-org/mason-lspconfig.nvim",
     cmd = { "LspInstall", "LspUninstall" },
     config = function()
-      require("mason-lspconfig").setup(lvim.lsp.installer.setup)
-
-      -- automatic_installation is handled by lsp-manager
-      local settings = require "mason-lspconfig.settings"
-      settings.current.automatic_installation = false
+      -- Merge user config with automatic_enable disabled
+      -- In mason-lspconfig v2, automatic_installation is replaced by automatic_enable
+      -- LunarVim handles server setup via lsp-manager, so we disable automatic_enable
+      local setup_config = vim.tbl_deep_extend("force", lvim.lsp.installer.setup or {}, {
+        automatic_enable = false,
+      })
+      require("mason-lspconfig").setup(setup_config)
     end,
     lazy = true,
     event = "User FileOpened",
@@ -23,7 +25,7 @@ local core_plugins = {
   { "tamago324/nlsp-settings.nvim", cmd = "LspSettings", lazy = true },
   { "nvimtools/none-ls.nvim", lazy = true },
   {
-    "williamboman/mason.nvim",
+    "mason-org/mason.nvim",
     config = function()
       require("lvim.core.mason").setup()
     end,

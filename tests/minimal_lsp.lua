@@ -23,8 +23,8 @@ local function load_plugins()
   vim.opt.rtp:prepend(install_path)
   require("lazy").setup({
     "neovim/nvim-lspconfig",
-    "williamboman/mason-lspconfig.nvim",
-    "williamboman/mason.nvim",
+    "mason-org/mason-lspconfig.nvim",
+    "mason-org/mason.nvim",
   }, {
     root = plugins_dir,
   })
@@ -87,7 +87,8 @@ _G.load_config = function()
 
   nvim_lsp[name].setup(setup_opts)
   if use_lsp_installer then
-    require("mason-lspconfig").setup { automatic_installation = true }
+    -- In mason-lspconfig v2, automatic_installation is replaced by automatic_enable
+    require("mason-lspconfig").setup { automatic_enable = true }
   end
 
   print [[You can find your log at $HOME/.cache/nvim/lsp.log. Please paste in a github issue under a details tag as described in the issue template.]]

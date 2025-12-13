@@ -5,16 +5,36 @@ local fmt = string.format
 local lvim_lsp_utils = require "lvim.lsp.utils"
 local is_windows = vim.loop.os_uname().version:match "Windows"
 
+--- Get the lspconfig to mason package name mapping
+---@return table<string, string>
+local function get_lspconfig_to_package_mapping()
+  local ok, mason_lspconfig = pcall(require, "mason-lspconfig")
+  if ok and mason_lspconfig.get_mappings then
+    return mason_lspconfig.get_mappings().lspconfig_to_package or {}
+  end
+  return {}
+end
+
+--- Get the install directory for a mason package
+---@param pkg_name string
+---@return string
+local function get_package_install_dir(pkg_name)
+  return vim.fn.expand("$MASON/packages/" .. pkg_name)
+end
+
 local function resolve_mason_config(server_name)
   local found, mason_config = pcall(require, "mason-lspconfig.server_configurations." .. server_name)
   if not found then
     Log:debug(fmt("mason configuration not found for %s", server_name))
     return {}
   end
-  local server_mapping = require "mason-lspconfig.mappings.server"
-  local path = require "mason-core.path"
-  local pkg_name = server_mapping.lspconfig_to_package[server_name]
-  local install_dir = path.package_prefix(pkg_name)
+  local mappings = get_lspconfig_to_package_mapping()
+  local pkg_name = mappings[server_name]
+  if not pkg_name then
+    Log:debug(fmt("no mason package mapping found for %s", server_name))
+    return {}
+  end
+  local install_dir = get_package_install_dir(pkg_name)
   local conf = mason_config(install_dir)
   if is_windows and conf.cmd and conf.cmd[1] then
     local exepath = vim.fn.exepath(conf.cmd[1])
@@ -98,10 +118,10 @@ function M.setup(server_name, user_config)
     return
   end
 
-  local server_mapping = require "mason-lspconfig.mappings.server"
   local registry = require "mason-registry"
+  local mappings = get_lspconfig_to_package_mapping()
 
-  local pkg_name = server_mapping.lspconfig_to_package[server_name]
+  local pkg_name = mappings[server_name]
   if not pkg_name then
     local config = resolve_config(server_name, user_config)
     launch_server(server_name, config)

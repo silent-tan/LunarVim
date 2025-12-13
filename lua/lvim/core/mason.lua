@@ -9,6 +9,8 @@ function M.config()
       width = 0.8,
       height = 0.9,
       border = "rounded",
+      -- The backdrop opacity. 0 is fully opaque, 100 is fully transparent (mason v2+)
+      backdrop = 60,
       keymaps = {
         toggle_package_expand = "<CR>",
         install_package = "i",
@@ -19,6 +21,9 @@ function M.config()
         uninstall_package = "X",
         cancel_installation = "<C-c>",
         apply_language_filter = "<C-f>",
+        -- mason v2+ keymaps
+        toggle_package_install_log = "<CR>",
+        toggle_help = "g?",
       },
     },
 
