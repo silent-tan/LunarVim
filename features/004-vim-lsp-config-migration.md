@@ -117,6 +117,26 @@ end
 - `lua/lvim/lsp/providers/vuels.lua`
 - `lua/lvim/core/telescope/custom-finders.lua`
 
+### 8. 模板生成逻辑优化
+
+**`lua/lvim/lsp/templates.lua`**:
+```lua
+-- 添加 filetype_assigned 跟踪表
+local filetype_assigned = {}
+
+function M.generate_ftplugin(server_name, dir, filetype_assigned)
+  filetype_assigned = filetype_assigned or {}
+  
+  for _, filetype in ipairs(filetypes) do
+    -- 每个 filetype 只分配第一个 LSP 服务器
+    if not filetype_assigned[filetype] then
+      utils.write_file(filename, setup_cmd .. "\n", "w")
+      filetype_assigned[filetype] = server_name
+    end
+  end
+end
+```
+
 ## 版本要求
 
 - Neovim >= 0.11.0
