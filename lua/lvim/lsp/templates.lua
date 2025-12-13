@@ -28,7 +28,10 @@ end
 ---Generates an ftplugin file based on the server_name in the selected directory
 ---@param server_name string name of a valid language server, e.g. pyright, gopls, tsserver, etc.
 ---@param dir string the full path to the desired directory
-function M.generate_ftplugin(server_name, dir)
+---@param filetype_assigned? table tracking table for assigned filetypes (optional)
+function M.generate_ftplugin(server_name, dir, filetype_assigned)
+  filetype_assigned = filetype_assigned or {}
+
   if should_skip(server_name) then
     return
   end
@@ -44,11 +47,13 @@ function M.generate_ftplugin(server_name, dir)
 
   for _, filetype in ipairs(filetypes) do
     filetype = filetype:match "%.([^.]*)$" or filetype
-    local filename = join_paths(dir, filetype .. ".lua")
-    local setup_cmd = string.format([[require("lvim.lsp.manager").setup(%q)]], server_name)
-    -- print("using setup_cmd: " .. setup_cmd)
-    -- overwrite the file completely
-    utils.write_file(filename, setup_cmd .. "\n", "a")
+    -- Skip if this filetype already has an LSP server assigned
+    if not filetype_assigned[filetype] then
+      local filename = join_paths(dir, filetype .. ".lua")
+      local setup_cmd = string.format([[require("lvim.lsp.manager").setup(%q)]], server_name)
+      utils.write_file(filename, setup_cmd .. "\n", "w")
+      filetype_assigned[filetype] = server_name
+    end
   end
 end
 
@@ -67,8 +72,11 @@ function M.generate_templates(servers_names)
     vim.fn.mkdir(ftplugin_dir, "p")
   end
 
+  -- Track which filetypes already have an LSP server assigned
+  local filetype_assigned = {}
+
   for _, server in ipairs(servers_names) do
-    M.generate_ftplugin(server, ftplugin_dir)
+    M.generate_ftplugin(server, ftplugin_dir, filetype_assigned)
   end
   Log:debug "Templates installation is complete"
 end
