@@ -23,7 +23,22 @@ local core_plugins = {
     dependencies = "mason.nvim",
   },
   { "tamago324/nlsp-settings.nvim", cmd = "LspSettings", lazy = true },
-  { "nvimtools/none-ls.nvim", lazy = true },
+  -- Formatting and linting (replacing null-ls)
+  {
+    "stevearc/conform.nvim",
+    event = { "BufWritePre" },
+    cmd = { "ConformInfo" },
+    config = function()
+      require("lvim.lsp.conform").setup()
+    end,
+  },
+  {
+    "mfussenegger/nvim-lint",
+    event = { "BufReadPre", "BufNewFile" },
+    config = function()
+      require("lvim.lsp.lint").setup()
+    end,
+  },
   {
     "mason-org/mason.nvim",
     config = function()

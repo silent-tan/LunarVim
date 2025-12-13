@@ -24,10 +24,10 @@ describe("plugin-loader", function()
   it("should be able to load lsp packages without errors", function()
     require("lvim.lsp").setup()
 
+    -- Core LSP packages (conform and lint are lazy-loaded by events)
     local lsp_packages = {
       "lspconfig",
       "nlspsettings",
-      "null-ls",
     }
 
     for _, plugin in ipairs(lsp_packages) do

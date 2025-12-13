@@ -18,49 +18,40 @@ local function str_list(list)
 end
 
 local function make_formatters_info(ft)
-  local null_formatters = require "lvim.lsp.null-ls.formatters"
-  local registered_formatters = null_formatters.list_registered(ft)
-  local supported_formatters = null_formatters.list_supported(ft)
+  local ok, conform_formatters = pcall(require, "lvim.lsp.conform")
+  local registered_formatters = ok and conform_formatters.list_registered(ft) or {}
   local section = {
-    "Formatters info",
+    "Formatters info (conform.nvim)",
     fmt(
       "* Active: %s%s",
       table.concat(registered_formatters, " " .. lvim.icons.ui.BoxChecked .. " , "),
       vim.tbl_count(registered_formatters) > 0 and " " .. lvim.icons.ui.BoxChecked .. " " or ""
     ),
-    fmt("* Supported: %s", str_list(supported_formatters)),
   }
 
   return section
 end
 
 local function make_code_actions_info(ft)
-  local null_actions = require "lvim.lsp.null-ls.code_actions"
-  local registered_actions = null_actions.list_registered(ft)
+  -- Code actions are now handled by LSP servers directly
   local section = {
     "Code actions info",
-    fmt(
-      "* Active: %s%s",
-      table.concat(registered_actions, " " .. lvim.icons.ui.BoxChecked .. " , "),
-      vim.tbl_count(registered_actions) > 0 and " " .. lvim.icons.ui.BoxChecked .. " " or ""
-    ),
+    "* Provided by LSP servers",
   }
 
   return section
 end
 
 local function make_linters_info(ft)
-  local null_linters = require "lvim.lsp.null-ls.linters"
-  local supported_linters = null_linters.list_supported(ft)
-  local registered_linters = null_linters.list_registered(ft)
+  local ok, lint_linters = pcall(require, "lvim.lsp.lint")
+  local registered_linters = ok and lint_linters.list_registered(ft) or {}
   local section = {
-    "Linters info",
+    "Linters info (nvim-lint)",
     fmt(
       "* Active: %s%s",
       table.concat(registered_linters, " " .. lvim.icons.ui.BoxChecked .. " , "),
       vim.tbl_count(registered_linters) > 0 and " " .. lvim.icons.ui.BoxChecked .. " " or ""
     ),
-    fmt("* Supported: %s", str_list(supported_linters)),
   }
 
   return section
@@ -74,7 +65,8 @@ local function tbl_set_highlight(terms, highlight_group)
 end
 
 local function make_client_info(client)
-  if client.name == "null-ls" then
+  -- Skip virtual/helper clients
+  if client.name == "copilot" then
     return
   end
   local client_enabled_caps = lsp_utils.get_client_capabilities(client.id)
@@ -205,9 +197,13 @@ function M.toggle_popup(ft)
     vim.fn.matchadd("string", lvim.icons.ui.BoxChecked)
     vim.fn.matchadd("boolean", "inactive")
     vim.fn.matchadd("error", "false")
-    tbl_set_highlight(require("lvim.lsp.null-ls.formatters").list_registered(ft), "LvimInfoIdentifier")
-    tbl_set_highlight(require("lvim.lsp.null-ls.linters").list_registered(ft), "LvimInfoIdentifier")
-    tbl_set_highlight(require("lvim.lsp.null-ls.code_actions").list_registered(ft), "LvimInfoIdentifier")
+    -- Highlight formatters and linters
+    pcall(function()
+      tbl_set_highlight(require("lvim.lsp.conform").list_registered(ft), "LvimInfoIdentifier")
+    end)
+    pcall(function()
+      tbl_set_highlight(require("lvim.lsp.lint").list_registered(ft), "LvimInfoIdentifier")
+    end)
   end
 
   local Popup = require("lvim.interface.popup"):new {

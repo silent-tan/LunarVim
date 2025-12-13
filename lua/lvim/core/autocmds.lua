@@ -55,7 +55,7 @@ function M.load_defaults()
           "lspinfo",
           "lir",
           "lsp-installer",
-          "null-ls-info",
+          "ConformInfo",
           "tsplayground",
           "DressingSelect",
           "Jaq",

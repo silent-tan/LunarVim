@@ -100,7 +100,8 @@ function M.setup()
     require("nlspsettings").setup(lvim.lsp.nlsp_settings.setup)
   end)
 
-  require("lvim.lsp.null-ls").setup()
+  -- conform.nvim and nvim-lint are configured via lazy.nvim
+  -- Their setup is called in plugins.lua
 
   autocmds.configure_format_on_save()
 

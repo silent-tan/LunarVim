@@ -113,15 +113,19 @@ return {
         end
       end
 
-      -- add formatter
-      local formatters = require "lvim.lsp.null-ls.formatters"
-      local supported_formatters = formatters.list_registered(buf_ft)
-      vim.list_extend(buf_client_names, supported_formatters)
+      -- add formatter (conform.nvim)
+      local ok_conform, conform_formatters = pcall(require, "lvim.lsp.conform")
+      if ok_conform then
+        local supported_formatters = conform_formatters.list_registered(buf_ft)
+        vim.list_extend(buf_client_names, supported_formatters)
+      end
 
-      -- add linter
-      local linters = require "lvim.lsp.null-ls.linters"
-      local supported_linters = linters.list_registered(buf_ft)
-      vim.list_extend(buf_client_names, supported_linters)
+      -- add linter (nvim-lint)
+      local ok_lint, lint_linters = pcall(require, "lvim.lsp.lint")
+      if ok_lint then
+        local supported_linters = lint_linters.list_registered(buf_ft)
+        vim.list_extend(buf_client_names, supported_linters)
+      end
 
       local unique_client_names = table.concat(buf_client_names, ", ")
       local language_servers = string.format("[%s]", unique_client_names)

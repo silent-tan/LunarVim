@@ -15,7 +15,7 @@ function M.get_active_clients_by_ft(filetype)
   local clients = vim.lsp.get_clients()
   for _, client in pairs(clients) do
     local supported_filetypes = client.config.filetypes or {}
-    if client.name ~= "null-ls" and vim.tbl_contains(supported_filetypes, filetype) then
+    if vim.tbl_contains(supported_filetypes, filetype) then
       table.insert(matches, client)
     end
   end
@@ -185,19 +185,22 @@ function M.setup_codelens_refresh(client, bufnr)
 end
 
 ---filter passed to vim.lsp.buf.format
----always selects null-ls if it's available and caches the value per buffer
+---prefers conform.nvim formatters if available, otherwise uses LSP
 ---@param client table client attached to a buffer
 ---@return boolean if client matches
 function M.format_filter(client)
-  local filetype = vim.bo.filetype
-  local n = require "null-ls"
-  local s = require "null-ls.sources"
-  local method = n.methods.FORMATTING
-  local available_formatters = s.get_available(filetype, method)
+  -- Check if conform.nvim has formatters for this filetype
+  local ok, conform = pcall(require, "conform")
+  if ok then
+    local formatters = conform.list_formatters_for_buffer()
+    if #formatters > 0 then
+      -- conform.nvim will handle formatting, skip LSP
+      return false
+    end
+  end
 
-  if #available_formatters > 0 then
-    return client.name == "null-ls"
-  elseif client.supports_method "textDocument/formatting" then
+  -- Fall back to LSP formatting
+  if client:supports_method "textDocument/formatting" then
     return true
   else
     return false
