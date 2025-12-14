@@ -89,16 +89,8 @@ end
 function M.setup()
   Log:debug "Setting up LSP support"
 
-  local lsp_status_ok, _ = pcall(require, "lspconfig")
-  if not lsp_status_ok then
-    return
-  end
-
-  if lvim.use_icons then
-    for _, sign in ipairs(vim.tbl_get(vim.diagnostic.config(), "signs", "values") or {}) do
-      vim.fn.sign_define(sign.name, { texthl = sign.name, text = sign.text, numhl = sign.name })
-    end
-  end
+  -- Note: diagnostic signs are now configured via vim.diagnostic.config()
+  -- The sign_define approach is deprecated in Nvim 0.11+
 
   if not utils.is_directory(lvim.lsp.templates_dir) then
     require("lvim.lsp.templates").generate_templates()
@@ -108,7 +100,8 @@ function M.setup()
     require("nlspsettings").setup(lvim.lsp.nlsp_settings.setup)
   end)
 
-  require("lvim.lsp.null-ls").setup()
+  -- conform.nvim and nvim-lint are configured via lazy.nvim
+  -- Their setup is called in plugins.lua
 
   autocmds.configure_format_on_save()
 
@@ -121,8 +114,10 @@ function M.setup()
   set_handler_opts_if_not_set("textDocument/hover", vim.lsp.handlers.hover, { border = "rounded" })
   set_handler_opts_if_not_set("textDocument/signatureHelp", vim.lsp.handlers.signature_help, { border = "rounded" })
 
-  -- Enable rounded borders in :LspInfo window.
-  require("lspconfig.ui.windows").default_options.border = "rounded"
+  -- Enable rounded borders in :LspInfo window (if lspconfig is available)
+  pcall(function()
+    require("lspconfig.ui.windows").default_options.border = "rounded"
+  end)
 end
 
 return M

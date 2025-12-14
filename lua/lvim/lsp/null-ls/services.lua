@@ -3,7 +3,6 @@ local M = {}
 local Log = require "lvim.core.log"
 
 local function find_root_dir()
-  local util = require "lspconfig/util"
   local lsp_utils = require "lvim.lsp.utils"
 
   local ts_client = lsp_utils.is_client_active "typescript"
@@ -11,7 +10,8 @@ local function find_root_dir()
     return ts_client.config.root_dir
   end
   local dirname = vim.fn.expand "%:p:h"
-  return util.root_pattern "package.json"(dirname)
+  -- Use vim.fs.root (Neovim 0.10+) instead of lspconfig.util.root_pattern
+  return vim.fs.root(dirname, { "package.json" })
 end
 
 local function from_node_modules(command)

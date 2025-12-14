@@ -1,8 +1,8 @@
 local opts = {
   setup = {
     root_dir = function(fname)
-      local util = require "lvim.lspconfig/util"
-      return util.root_pattern "package.json"(fname) or util.root_pattern "vue.config.js"(fname) or vim.fn.getcwd()
+      -- Use vim.fs.root (Neovim 0.10+) instead of lspconfig.util.root_pattern
+      return vim.fs.root(fname, { "package.json" }) or vim.fs.root(fname, { "vue.config.js" }) or vim.fn.getcwd()
     end,
     init_options = {
       config = {

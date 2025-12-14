@@ -151,11 +151,26 @@ return {
       loader = "json",
     },
   },
-  null_ls = {
-    setup = {
-      debug = false,
+  -- Formatting configuration (conform.nvim)
+  formatting = {
+    formatters_by_ft = {
+      -- lua = { "stylua" },
+      -- python = { "black" },
+      -- javascript = { "prettier" },
     },
-    config = {},
+    format_on_save = {
+      timeout_ms = 1000,
+      lsp_format = "fallback",
+    },
+    setup = {},
+  },
+  -- Linting configuration (nvim-lint)
+  linting = {
+    linters_by_ft = {
+      -- python = { "flake8" },
+      -- javascript = { "eslint" },
+    },
+    linters = {},
   },
   ---@deprecated use lvim.lsp.automatic_configuration.skipped_servers instead
   override = {},
