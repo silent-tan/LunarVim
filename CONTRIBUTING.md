@@ -1,6 +1,6 @@
 # Contributing to LunarVim
 
-Welcome to the LunarVim contributing guide. We are excited about the prospect of you joining our [community](https://github.com/lunarvim/LunarVim/graphs/contributors)!
+Welcome to the LunarVim contributing guide. We are excited about the prospect of you joining our [community](https://github.com/silent-tan/LunarVim/graphs/contributors)!
 
 There are many opportunities to contributing to the project at any level. Every contribution is highly valued and no contribution is too small.
 
@@ -11,7 +11,7 @@ One of the best ways to begin contributing in a meaningful way is by helping fin
 ## Getting Started
 
 1. Follow the [Installation](https://www.lunarvim.org/docs/installation) guide
-2. Link your fork with the repository `git remote add upstream https://github.com/lunarvim/LunarVim.git`, or use `gh fork`
+2. Link your fork with the repository `git remote add upstream https://github.com/silent-tan/LunarVim.git`, or use `gh fork`
 3. That's it! You can now `git fetch upstream` and `git rebase [-i] upstream/master` to update your branches with the latest contributions.
 
 <br />
