@@ -171,6 +171,12 @@ local excludes = function()
 end
 
 M.get_winbar = function()
+  if #vim.api.nvim_list_uis() == 0 then
+    return
+  end
+  if vim.o.columns < 2 or vim.o.lines < 2 or vim.api.nvim_win_get_height(0) < 1 then
+    return
+  end
   if excludes() then
     return
   end

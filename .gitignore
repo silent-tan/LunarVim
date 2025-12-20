@@ -29,3 +29,5 @@ lua/lv-user-config/
 
 .luarc.json
 .luacheckcache
+
+node_modules
