@@ -5,9 +5,10 @@ local Log = require "lvim.core.log"
 
 function M.is_client_active(name)
   local clients = vim.lsp.get_clients()
-  return tbl.find_first(clients, function(client)
+  local client = tbl.find_first(clients, function(client)
     return client.name == name
   end)
+  return client ~= nil
 end
 
 function M.get_active_clients_by_ft(filetype)
@@ -43,12 +44,7 @@ end
 ---@param server_name string can be any server supported by mason-lspconfig
 ---@return string[] supported filetypes as a list of strings
 function M.get_supported_filetypes(server_name)
-  -- Try vim.lsp.config first (Neovim 0.11+)
-  local lsp_config = vim.lsp.config[server_name]
-  if lsp_config and lsp_config.filetypes then
-    return lsp_config.filetypes
-  end
-  -- Fallback to lspconfig.configs.<server_name> for unconfigured servers
+  -- Fallback to lspconfig.configs.<server_name> for server configuration
   local ok, server_config = pcall(require, "lspconfig.configs." .. server_name)
   if ok and server_config and server_config.default_config and server_config.default_config.filetypes then
     return server_config.default_config.filetypes

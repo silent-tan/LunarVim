@@ -5,6 +5,7 @@ local fmt = string.format
 local lvim_lsp_utils = require "lvim.lsp.utils"
 local is_windows = vim.uv.os_uname().version:match "Windows"
 
+
 --- Get the lspconfig to mason package name mapping
 ---@return table<string, string>
 local function get_lspconfig_to_package_mapping()

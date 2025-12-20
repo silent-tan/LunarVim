@@ -3,10 +3,12 @@ local M = {}
 local Log = require "lvim.core.log"
 local utils = require "lvim.utils"
 local lvim_lsp_utils = require "lvim.lsp.utils"
+local fmt = string.format
 
 local ftplugin_dir = lvim.lsp.templates_dir
 
 local join_paths = _G.join_paths
+
 
 function M.remove_template_files()
   -- remove any outdated files
@@ -28,10 +30,7 @@ end
 ---Generates an ftplugin file based on the server_name in the selected directory
 ---@param server_name string name of a valid language server, e.g. pyright, gopls, tsserver, etc.
 ---@param dir string the full path to the desired directory
----@param filetype_assigned? table tracking table for assigned filetypes (optional)
-function M.generate_ftplugin(server_name, dir, filetype_assigned)
-  filetype_assigned = filetype_assigned or {}
-
+function M.generate_ftplugin(server_name, dir)
   if should_skip(server_name) then
     return
   end
@@ -41,19 +40,15 @@ function M.generate_ftplugin(server_name, dir, filetype_assigned)
     return not vim.tbl_contains(skipped_filetypes, ft)
   end, lvim_lsp_utils.get_supported_filetypes(server_name) or {})
 
-  if not filetypes then
+  if not filetypes or #filetypes == 0 then
     return
   end
 
   for _, filetype in ipairs(filetypes) do
     filetype = filetype:match "%.([^.]*)$" or filetype
-    -- Skip if this filetype already has an LSP server assigned
-    if not filetype_assigned[filetype] then
-      local filename = join_paths(dir, filetype .. ".lua")
-      local setup_cmd = string.format([[require("lvim.lsp.manager").setup(%q)]], server_name)
-      utils.write_file(filename, setup_cmd .. "\n", "w")
-      filetype_assigned[filetype] = server_name
-    end
+    local filename = join_paths(dir, filetype .. ".lua")
+    local setup_cmd = string.format([[require("lvim.lsp.manager").setup(%q)]], server_name)
+    utils.write_file(filename, setup_cmd .. "\n", "a")
   end
 end
 
@@ -72,11 +67,8 @@ function M.generate_templates(servers_names)
     vim.fn.mkdir(ftplugin_dir, "p")
   end
 
-  -- Track which filetypes already have an LSP server assigned
-  local filetype_assigned = {}
-
   for _, server in ipairs(servers_names) do
-    M.generate_ftplugin(server, ftplugin_dir, filetype_assigned)
+    M.generate_ftplugin(server, ftplugin_dir)
   end
   Log:debug "Templates installation is complete"
 end
